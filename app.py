@@ -143,7 +143,24 @@ TOKEN_SYNONYMS = {
     "лыжи": "лыж",
     "самокаты": "самокат",
     "велошлем": "шлем",
+    "замок": "замок",
+    "замки": "замок",
+    "бег": "бег",
+    "беговые": "бег",
+    "беговой": "бег",
 }
+
+CATEGORY_OVERRIDE_RULES = [
+    {"required": {"велосипед", "замок"}, "lvl3": "Замки для велосипеда", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "шлем"}, "lvl3": "Шлемы велосипедные", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "фонар"}, "lvl3": "Фонари для велосипеда", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "держател"}, "lvl3": "Держатели для велосипеда", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "звонок"}, "lvl3": "Звонки для велосипеда", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "крыл"}, "lvl3": "Крылья для велосипеда", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "корзин"}, "lvl3": "Корзины для велосипеда", "note": "Правило по ключевым словам"},
+    {"required": {"кроссовк", "бег"}, "lvl3": "Кроссовки для бега", "note": "Правило по ключевым словам"},
+    {"required": {"велосипед", "горн"}, "lvl3": "Велосипеды", "note": "Правило по ключевым словам"},
+]
 
 
 def normalize_text(value: str) -> str:
@@ -339,16 +356,33 @@ def score_reference_match(name: str, row: pd.Series) -> float:
         scores.append(max(seq_score * 0.55 + overlap * 0.45, overlap * 0.85 + name_cover * 0.15, contains))
 
     combo_tokens = row["__tokens_combo"]
-    combo_overlap = len(name_tokens & combo_tokens) / max(len(name_tokens), 1)
+    inter = name_tokens & combo_tokens
+    combo_overlap = len(inter) / max(len(name_tokens), 1)
+    ref_cover = len(inter) / max(len(combo_tokens), 1)
     has_core_object = any(tok in combo_tokens for tok in name_tokens)
     score = max(scores)
-    score = max(score, combo_overlap * 0.9 + (0.08 if has_core_object else 0.0))
+    score = max(score, combo_overlap * 0.9 + ref_cover * 0.1 + (0.08 if has_core_object else 0.0))
+    if inter and inter.issubset(combo_tokens):
+        score = max(score, 0.72 if len(inter) >= 2 else 0.58)
 
     if "велосипед" in name_tokens and "велосипед" in combo_tokens:
         score = max(score, 0.94)
     if "электровелосипед" in name_tokens and "электровелосипед" in combo_tokens:
         score = max(score, 0.96)
     return min(score, 0.99)
+
+
+def resolve_override_rule(reference_df: pd.DataFrame, product_name: str) -> Tuple[str, str, Optional[float], str] | None:
+    name_tokens = text_tokens(product_name)
+    if not name_tokens:
+        return None
+    for rule in CATEGORY_OVERRIDE_RULES:
+        if rule["required"].issubset(name_tokens):
+            rows = reference_df[reference_df["Товарная группа 3 уровня"] == rule["lvl3"]]
+            if not rows.empty:
+                row = rows.iloc[0]
+                return str(row["Тарифная группа"]), str(row["Товарная группа 3 уровня"]), 0.99, rule["note"]
+    return None
 
 
 def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_tariff_group: str, manual_group3: str) -> Tuple[str, str, Optional[float], str]:
@@ -367,6 +401,10 @@ def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_t
         if not rows.empty:
             tariff_group = str(rows.iloc[0]["Тарифная группа"])
             return tariff_group, manual_group3, 1.0, "Товарная группа 3 уровня из файла товаров"
+
+    override = resolve_override_rule(reference_df, product_name)
+    if override is not None:
+        return override
 
     for col, note in [
         ("Товарная группа 3 уровня", "Точное совпадение с ТГ3"),
@@ -393,7 +431,7 @@ def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_t
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     best_score, best_tariff, best_lvl3 = candidates[0]
-    if best_score >= 0.52:
+    if best_score >= 0.45:
         return best_tariff, best_lvl3, best_score, f"Автоподбор по названию ({best_score:.2f})"
     return "", "", best_score, "Не найдено"
 
