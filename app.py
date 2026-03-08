@@ -15,7 +15,6 @@ from openpyxl.utils import get_column_letter
 
 APP_DIR = Path(__file__).resolve().parent
 DATA_DIR = APP_DIR / "data"
-TEMPLATES_DIR = APP_DIR / "templates"
 DEFAULT_COMMISSIONS_FILENAME = "sportmaster_commissions_2026-02-01.xlsx"
 
 PRODUCT_REQUIRED_COLS = [
@@ -130,6 +129,9 @@ STOP_WORDS = {
 
 TOKEN_SYNONYMS = {
     "велосипеды": "велосипед",
+    "велосипедный": "велосипед",
+    "велосипедная": "велосипед",
+    "велосипедные": "велосипед",
     "электровелосипеды": "электровелосипед",
     "кроссовки": "кроссовк",
     "ботинки": "ботинк",
@@ -138,28 +140,53 @@ TOKEN_SYNONYMS = {
     "мячи": "мяч",
     "гантели": "гантел",
     "вело": "велосипед",
+    "велоаксессуар": "велосипед",
     "горный": "горн",
-    "беговые": "бегов",
+    "беговые": "бег",
+    "беговой": "бег",
     "лыжи": "лыж",
     "самокаты": "самокат",
     "велошлем": "шлем",
-    "замок": "замок",
+    "велозамок": "замок",
     "замки": "замок",
     "бег": "бег",
-    "беговые": "бег",
-    "беговой": "бег",
+    "фонарь": "фонар",
+    "фонари": "фонар",
+    "держатель": "держател",
+    "держатели": "держател",
+    "крылья": "крыл",
+    "крыло": "крыл",
+    "насосы": "насос",
+    "насос": "насос",
+    "звонки": "звонок",
+    "шлемы": "шлем",
+    "седла": "седло",
+    "седло": "седло",
+    "корзины": "корзин",
+    "корзина": "корзин",
 }
 
 CATEGORY_OVERRIDE_RULES = [
-    {"required": {"велосипед", "замок"}, "lvl3": "Замки для велосипеда", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "шлем"}, "lvl3": "Шлемы велосипедные", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "фонар"}, "lvl3": "Фонари для велосипеда", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "держател"}, "lvl3": "Держатели для велосипеда", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "звонок"}, "lvl3": "Звонки для велосипеда", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "крыл"}, "lvl3": "Крылья для велосипеда", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "корзин"}, "lvl3": "Корзины для велосипеда", "note": "Правило по ключевым словам"},
-    {"required": {"кроссовк", "бег"}, "lvl3": "Кроссовки для бега", "note": "Правило по ключевым словам"},
-    {"required": {"велосипед", "горн"}, "lvl3": "Велосипеды", "note": "Правило по ключевым словам"},
+    {"all": {"велосипед", "замок"}, "lvl3": "Замки для велосипеда"},
+    {"all": {"замок"}, "any": {"велосипед", "вело"}, "lvl3": "Замки для велосипеда"},
+    {"all": {"велосипед", "шлем"}, "lvl3": "Шлемы велосипедные"},
+    {"all": {"шлем"}, "any": {"велосипед", "вело"}, "lvl3": "Шлемы велосипедные"},
+    {"all": {"велосипед", "фонар"}, "lvl3": "Фонари для велосипеда"},
+    {"all": {"фонар"}, "any": {"велосипед", "вело"}, "lvl3": "Фонари для велосипеда"},
+    {"all": {"велосипед", "держател"}, "lvl3": "Держатели для велосипеда"},
+    {"all": {"держател"}, "any": {"велосипед", "вело"}, "lvl3": "Держатели для велосипеда"},
+    {"all": {"велосипед", "звонок"}, "lvl3": "Звонки для велосипеда"},
+    {"all": {"звонок"}, "any": {"велосипед", "вело"}, "lvl3": "Звонки для велосипеда"},
+    {"all": {"велосипед", "крыл"}, "lvl3": "Крылья для велосипеда"},
+    {"all": {"крыл"}, "any": {"велосипед", "вело"}, "lvl3": "Крылья для велосипеда"},
+    {"all": {"велосипед", "корзин"}, "lvl3": "Корзины для велосипеда"},
+    {"all": {"корзин"}, "any": {"велосипед", "вело"}, "lvl3": "Корзины для велосипеда"},
+    {"all": {"велосипед", "насос"}, "lvl3": "Насосы для велосипеда"},
+    {"all": {"насос"}, "any": {"велосипед", "вело"}, "lvl3": "Насосы для велосипеда"},
+    {"all": {"велосипед", "седло"}, "lvl3": "Седла для велосипеда"},
+    {"all": {"седло"}, "any": {"велосипед", "вело"}, "lvl3": "Седла для велосипеда"},
+    {"all": {"кроссовк", "бег"}, "lvl3": "Кроссовки для бега"},
+    {"all": {"велосипед", "горн"}, "lvl3": "Велосипеды"},
 ]
 
 
@@ -173,7 +200,7 @@ def stem_token(token: str) -> str:
     t = normalize_text(token)
     if t in TOKEN_SYNONYMS:
         return TOKEN_SYNONYMS[t]
-    for suffix in ["иями", "ями", "ами", "ями", "ов", "ев", "ей", "иях", "иях", "ия", "ья", "ье", "ий", "ый", "ой", "ая", "яя", "ое", "ее", "ые", "ие", "ам", "ям", "ах", "ях", "ом", "ем", "ую", "юю", "а", "я", "ы", "и", "е", "о", "у", "ю"]:
+    for suffix in ["иями", "ями", "ами", "иях", "ия", "ья", "ье", "ий", "ый", "ой", "ая", "яя", "ое", "ее", "ые", "ие", "ам", "ям", "ах", "ях", "ом", "ем", "ую", "юю", "ов", "ев", "ей", "а", "я", "ы", "и", "е", "о", "у", "ю"]:
         if len(t) >= 6 and t.endswith(suffix):
             t = t[: -len(suffix)]
             break
@@ -218,8 +245,9 @@ def read_reference() -> pd.DataFrame:
         df[f"__norm_{col}"] = df[col].map(normalize_text)
         df[f"__tokens_{col}"] = df[col].map(text_tokens)
 
-    combo_cols = ["Товарная группа 2 уровня", "Товарная группа 3 уровня", "Тарифная группа"]
+    combo_cols = ["Товарная группа 1 уровня", "Товарная группа 2 уровня", "Товарная группа 3 уровня", "Тарифная группа"]
     df["__search_text"] = df[combo_cols].fillna("").astype(str).agg(" ".join, axis=1)
+    df["__search_norm"] = df["__search_text"].map(normalize_text)
     df["__tokens_combo"] = df["__search_text"].map(text_tokens)
 
     for col in ["Ставка комиссии FBSM, %", "Ставка комиссии FBS, %"]:
@@ -248,7 +276,7 @@ def prepare_products(df: pd.DataFrame) -> pd.DataFrame:
         "Доля возвратов, %", "Доля невыкупа/отмен, %",
     ]
     for c in numeric_cols:
-        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)
+        df[c] = pd.to_numeric(df[c], errors="coerce")
 
     df["Система налогообложения"] = df["Система налогообложения"].fillna("").astype(str).str.strip()
     return df
@@ -262,8 +290,9 @@ def build_product_template_bytes() -> bytes:
     headers = PRODUCT_REQUIRED_COLS + PRODUCT_OPTIONAL_COLS
     ws.append(headers)
     sample_rows = [
-        ["SM-001", "Кроссовки беговые мужские", 2500, 5990, 0.8, 32, 22, 12, 0, 5, "ОСНО (22%)", 0, 0, 20, 8, 3, "", ""],
-        ["SM-002", "Велосипед горный", 18000, 32990, 14.5, 145, 25, 78, 75, 7, "УСН доходы (6%)", 0, 300, 18, 5, 2, "", ""],
+        ["SM-001", "Кроссовки беговые мужские", 2500, 5990, 0.8, 32, 22, 12, "", "", "ОСНО (22%)", "", "", 20, "", "", "", ""],
+        ["SM-002", "Велосипед горный", 18000, 32990, 14.5, 145, 25, 78, "", "", "УСН доходы (6%)", "", 300, 18, "", "", "", ""],
+        ["SM-003", "Велосипедный замок", 500, 1000, 0.3, 15, 10, 5, "", "", "", "", "", 20, "", "", "", ""],
     ]
     for row in sample_rows:
         ws.append(row)
@@ -286,22 +315,18 @@ def build_product_template_bytes() -> bytes:
         ("Цена продажи, ₽", "Обязательное поле."),
         ("Вес факт, кг", "Обязательное поле."),
         ("Длина, см / Ширина, см / Высота, см", "Обязательные поля для логистики."),
-        ("Тарифная группа / Товарная группа 3 уровня", "Необязательно. Нужны только если хотите вручную переопределить автоподбор."),
-        ("Дней хранения FBSM", "Нужно только для FBSM."),
-        ("Реклама, %", "Процент от цены продажи."),
-        ("Система налогообложения", "Можно оставить пустым и задать общий режим слева в приложении."),
-        ("Налог, %", "Если заполнено, имеет приоритет над режимом налогообложения."),
-        ("Прочие расходы, ₽", "Постоянные дополнительные расходы на единицу."),
-        ("Целевая маржа, %", "Для рекомендованной цены."),
-        ("Доля возвратов, % / Доля невыкупа/отмен, %", "Используются для ожидаемой обратной логистики FBSM."),
+        ("Тарифная группа / Товарная группа 3 уровня", "Необязательно. Обычно не нужны, только если хотите вручную переопределить автоподбор."),
+        ("Дней хранения FBSM / Реклама, % / Прочие расходы, ₽ / Целевая маржа, %", "Можно оставлять пустыми: приложение возьмет значения из левой панели."),
+        ("Система налогообложения / Налог, %", "Можно оставить пустым и задать общий режим слева."),
+        ("Доля возвратов, % / Доля невыкупа/отмен, %", "Нужны только для FBSM и ожидаемой обратной логистики."),
     ]
     for row in explanations:
         guide.append(row)
     for cell in guide[1]:
         cell.fill = header_fill
         cell.font = Font(color="FFFFFF", bold=True)
-    guide.column_dimensions["A"].width = 38
-    guide.column_dimensions["B"].width = 110
+    guide.column_dimensions["A"].width = 42
+    guide.column_dimensions["B"].width = 118
 
     stream = io.BytesIO()
     wb.save(stream)
@@ -325,7 +350,7 @@ def commission_rate_for_tariff_group(reference_df: pd.DataFrame, tariff_group: s
 
 def resolve_tax_rate(row_tax_pct: float, row_tax_system: str, default_tax_system: str, manual_default_tax_pct: float) -> Tuple[float, str]:
     row_tax_system = str(row_tax_system or "").strip()
-    if row_tax_pct and float(row_tax_pct) > 0:
+    if pd.notna(row_tax_pct) and float(row_tax_pct) > 0:
         return float(row_tax_pct), "Ставка из строки товара"
     if row_tax_system:
         if row_tax_system in TAX_SYSTEMS and TAX_SYSTEMS[row_tax_system] is not None:
@@ -339,37 +364,63 @@ def resolve_tax_rate(row_tax_pct: float, row_tax_system: str, default_tax_system
     return float(TAX_SYSTEMS.get(default_tax_system, 0.0) or 0.0), default_tax_system
 
 
+def resolve_row_value(row: pd.Series, col_name: str, sidebar_default: float) -> float:
+    value = row.get(col_name)
+    if pd.isna(value) or value == "":
+        return float(sidebar_default)
+    try:
+        value = float(value)
+    except Exception:
+        return float(sidebar_default)
+    return float(sidebar_default if value == 0 else value)
+
+
 def score_reference_match(name: str, row: pd.Series) -> float:
     name_norm = normalize_text(name)
     name_tokens = text_tokens(name)
     if not name_tokens:
         return 0.0
 
-    scores = []
+    best = 0.0
     for col in ["Товарная группа 3 уровня", "Тарифная группа", "Товарная группа 2 уровня"]:
         ref_norm = row[f"__norm_{col}"]
         ref_tokens = row[f"__tokens_{col}"]
-        seq_score = SequenceMatcher(None, name_norm, ref_norm).ratio()
-        overlap = len(name_tokens & ref_tokens) / max(len(ref_tokens), 1)
-        name_cover = len(name_tokens & ref_tokens) / max(len(name_tokens), 1)
-        contains = 1.0 if ref_norm and ref_norm in name_norm else 0.0
-        scores.append(max(seq_score * 0.55 + overlap * 0.45, overlap * 0.85 + name_cover * 0.15, contains))
+        seq = SequenceMatcher(None, name_norm, ref_norm).ratio()
+        token_inter = name_tokens & ref_tokens
+        overlap = len(token_inter) / max(len(ref_tokens), 1)
+        cover_name = len(token_inter) / max(len(name_tokens), 1)
+        contains = 1.0 if ref_norm and (ref_norm in name_norm or any(tok in ref_norm for tok in name_tokens if len(tok) >= 5)) else 0.0
+        score = max(seq * 0.45 + overlap * 0.35 + cover_name * 0.20, overlap * 0.75 + cover_name * 0.25, contains)
+        best = max(best, score)
 
     combo_tokens = row["__tokens_combo"]
+    combo_norm = row["__search_norm"]
     inter = name_tokens & combo_tokens
     combo_overlap = len(inter) / max(len(name_tokens), 1)
-    ref_cover = len(inter) / max(len(combo_tokens), 1)
-    has_core_object = any(tok in combo_tokens for tok in name_tokens)
-    score = max(scores)
-    score = max(score, combo_overlap * 0.9 + ref_cover * 0.1 + (0.08 if has_core_object else 0.0))
-    if inter and inter.issubset(combo_tokens):
-        score = max(score, 0.72 if len(inter) >= 2 else 0.58)
+    combo_cover = len(inter) / max(len(combo_tokens), 1)
+    prefix_hits = sum(1 for tok in name_tokens for ref_tok in combo_tokens if tok == ref_tok or tok.startswith(ref_tok) or ref_tok.startswith(tok))
+    prefix_boost = min(prefix_hits * 0.06, 0.24)
+    phrase_boost = 0.0
 
-    if "велосипед" in name_tokens and "велосипед" in combo_tokens:
-        score = max(score, 0.94)
-    if "электровелосипед" in name_tokens and "электровелосипед" in combo_tokens:
-        score = max(score, 0.96)
-    return min(score, 0.99)
+    if "велосипед" in name_tokens and "велоспорт" in combo_norm:
+        phrase_boost += 0.18
+    if "замок" in name_tokens and "замки для велосипеда" in combo_norm:
+        phrase_boost += 0.30
+    if "горн" in name_tokens and "велосипеды" in combo_norm:
+        phrase_boost += 0.18
+    if "кроссовк" in name_tokens and "кроссовки для бега" in combo_norm and "бег" in name_tokens:
+        phrase_boost += 0.25
+
+    best = max(best, combo_overlap * 0.70 + combo_cover * 0.12 + prefix_boost + phrase_boost)
+
+    if inter and len(inter) >= 2:
+        best = max(best, 0.78 + min(len(inter) * 0.02, 0.10))
+    if {"велосипед", "замок"}.issubset(name_tokens) and "замки для велосипеда" in combo_norm:
+        best = max(best, 0.98)
+    if {"велосипед", "горн"}.issubset(name_tokens) and "велосипеды" in combo_norm:
+        best = max(best, 0.98)
+
+    return min(best, 0.99)
 
 
 def resolve_override_rule(reference_df: pd.DataFrame, product_name: str) -> Tuple[str, str, Optional[float], str] | None:
@@ -377,11 +428,16 @@ def resolve_override_rule(reference_df: pd.DataFrame, product_name: str) -> Tupl
     if not name_tokens:
         return None
     for rule in CATEGORY_OVERRIDE_RULES:
-        if rule["required"].issubset(name_tokens):
-            rows = reference_df[reference_df["Товарная группа 3 уровня"] == rule["lvl3"]]
-            if not rows.empty:
-                row = rows.iloc[0]
-                return str(row["Тарифная группа"]), str(row["Товарная группа 3 уровня"]), 0.99, rule["note"]
+        all_req = set(rule.get("all", set()))
+        any_req = set(rule.get("any", set()))
+        if all_req and not all_req.issubset(name_tokens):
+            continue
+        if any_req and not (any_req & name_tokens):
+            continue
+        rows = reference_df[reference_df["Товарная группа 3 уровня"] == rule["lvl3"]]
+        if not rows.empty:
+            row = rows.iloc[0]
+            return str(row["Тарифная группа"]), str(row["Товарная группа 3 уровня"]), 0.99, "Правило по ключевым словам"
     return None
 
 
@@ -431,7 +487,7 @@ def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_t
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     best_score, best_tariff, best_lvl3 = candidates[0]
-    if best_score >= 0.45:
+    if best_score >= 0.42:
         return best_tariff, best_lvl3, best_score, f"Автоподбор по названию ({best_score:.2f})"
     return "", "", best_score, "Не найдено"
 
@@ -504,23 +560,24 @@ def calculate_row(
     include_fbsm_excess_handling: bool,
     default_tax_system: str,
     manual_default_tax_pct: float,
+    sidebar_defaults: dict,
 ) -> Dict:
     sku = str(row["Артикул"])
     name = str(row["Наименование товара"])
-    cost = float(row["Себестоимость, ₽"])
-    price = float(row["Цена продажи, ₽"])
-    actual_weight = float(row["Вес факт, кг"])
-    length = float(row["Длина, см"])
-    width = float(row["Ширина, см"])
-    height = float(row["Высота, см"])
-    storage_days = float(row["Дней хранения FBSM"])
-    ads_pct = float(row["Реклама, %"])
-    row_tax_pct = float(row["Налог, %"])
+    cost = float(row["Себестоимость, ₽"] or 0)
+    price = float(row["Цена продажи, ₽"] or 0)
+    actual_weight = float(row["Вес факт, кг"] or 0)
+    length = float(row["Длина, см"] or 0)
+    width = float(row["Ширина, см"] or 0)
+    height = float(row["Высота, см"] or 0)
+    storage_days = resolve_row_value(row, "Дней хранения FBSM", sidebar_defaults["Дней хранения FBSM"])
+    ads_pct = resolve_row_value(row, "Реклама, %", sidebar_defaults["Реклама, %"])
+    row_tax_pct = row["Налог, %"]
     row_tax_system = str(row.get("Система налогообложения", "") or "")
-    other_costs = float(row["Прочие расходы, ₽"])
-    target_margin = float(row["Целевая маржа, %"])
-    return_rate = float(row["Доля возвратов, %"])
-    cancel_rate = float(row["Доля невыкупа/отмен, %"])
+    other_costs = resolve_row_value(row, "Прочие расходы, ₽", sidebar_defaults["Прочие расходы, ₽"])
+    target_margin = resolve_row_value(row, "Целевая маржа, %", sidebar_defaults["Целевая маржа, %"])
+    return_rate = resolve_row_value(row, "Доля возвратов, %", sidebar_defaults["Доля возвратов, %"])
+    cancel_rate = resolve_row_value(row, "Доля невыкупа/отмен, %", sidebar_defaults["Доля невыкупа/отмен, %"])
 
     tariff_group, lvl3_group, match_score, match_note = resolve_tariff_group(
         reference_df, name, row.get("Тарифная группа", ""), row.get("Товарная группа 3 уровня", "")
@@ -553,9 +610,9 @@ def calculate_row(
     markup_on_full_cost = (price / full_cost - 1) if full_cost else 0.0
 
     target_price = target_margin_profit_rub = target_margin_pct_fact = None
+    fixed_costs = cost + logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling + other_costs
+    variable_rate = commission_pct + ads_pct + tax_pct
     if target_margin > 0:
-        fixed_costs = cost + logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling + other_costs
-        variable_rate = commission_pct + ads_pct + tax_pct
         target_price = solve_target_price(target_margin, fixed_costs, variable_rate)
         if target_price:
             target_commission = target_price * commission_pct / 100.0
@@ -570,6 +627,10 @@ def calculate_row(
         warnings.append("Не определена тарифная группа")
     if commission_pct == 0:
         warnings.append("Комиссия не найдена")
+    if target_margin <= 0:
+        warnings.append("Целевая маржа 0% — рекомендованная цена не рассчитывается")
+    elif target_price is None:
+        warnings.append("Рекомендованная цена не считается: комиссия + реклама + налог + целевая маржа >= 100%")
 
     return {
         "Артикул": sku,
@@ -665,12 +726,12 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
     guide = wb.create_sheet("Пояснения")
     guide.append(["Показатель", "Описание"])
     for row in [
-        ("Как определили категорию", "Показывает, было ли точное совпадение или автоподбор по названию товара."),
+        ("Как определили категорию", "Показывает, было ли точное совпадение, правило по ключевым словам или автоподбор по названию."),
+        ("Рекомендованная цена, ₽", "Считается от целевой маржи с учетом комиссии, логистики, рекламы, налога и прочих расходов."),
         ("Выплата до себестоимости, ₽", "Цена продажи минус комиссия и услуги маркетплейса."),
         ("Полная себестоимость, ₽", "Себестоимость товара плюс комиссия, логистика, хранение, реклама, налог и прочие расходы."),
         ("Маржа к выручке, %", "Прибыль / цена продажи."),
         ("Наценка на полную себестоимость, %", "Цена продажи / полная себестоимость - 1."),
-        ("Рекомендованная цена, ₽", "Цена для достижения целевой маржи с учетом текущих параметров слева и параметров строки."),
     ]:
         guide.append(row)
     for cell in guide[1]:
@@ -717,6 +778,14 @@ def app() -> None:
         if default_tax_system == "Своя ставка":
             manual_default_tax_pct = st.number_input("Своя ставка налога, %", min_value=0.0, value=6.0, step=0.5)
 
+        st.subheader("Параметры по умолчанию")
+        default_target_margin_pct = st.number_input("Целевая маржа по умолчанию, %", min_value=0.0, value=20.0, step=1.0)
+        default_ads_pct = st.number_input("Реклама по умолчанию, %", min_value=0.0, value=0.0, step=0.5)
+        default_storage_days = st.number_input("Дней хранения FBSM по умолчанию", min_value=0.0, value=0.0, step=1.0)
+        default_other_costs = st.number_input("Прочие расходы по умолчанию, ₽", min_value=0.0, value=0.0, step=50.0)
+        default_returns_pct = st.number_input("Доля возвратов по умолчанию, %", min_value=0.0, value=0.0, step=0.5)
+        default_cancel_pct = st.number_input("Доля невыкупа/отмен по умолчанию, %", min_value=0.0, value=0.0, step=0.5)
+
         st.subheader("Логистика FBS")
         fbs_weight_basis_ui = st.selectbox(
             "Основа веса",
@@ -737,17 +806,25 @@ def app() -> None:
         include_fbsm_defect_handling = st.checkbox("Учитывать обработку брака 30 ₽/шт", value=False)
         include_fbsm_excess_handling = st.checkbox("Учитывать обработку излишков 30 ₽/шт", value=False)
 
+    sidebar_defaults = {
+        "Дней хранения FBSM": default_storage_days,
+        "Реклама, %": default_ads_pct,
+        "Прочие расходы, ₽": default_other_costs,
+        "Целевая маржа, %": default_target_margin_pct,
+        "Доля возвратов, %": default_returns_pct,
+        "Доля невыкупа/отмен, %": default_cancel_pct,
+    }
+
     st.download_button(
         "Скачать шаблон товаров Excel",
         data=build_product_template_bytes(),
         file_name="Шаблон_товаров_Спортмастер.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=False,
     )
     products_file = st.file_uploader("Загрузите Excel-файл с товарами", type=["xlsx"])
 
     if products_file is None:
-        st.info("Сначала скачайте шаблон, заполните товары и загрузите файл. Категория и тарифная группа определяются автоматически по названию товара.")
+        st.info("Сначала скачайте шаблон, заполните товары и загрузите файл. Если в строке не указана целевая маржа, реклама, хранение или прочие расходы, приложение возьмет значения из левой панели.")
         return
 
     try:
@@ -769,6 +846,7 @@ def app() -> None:
             include_fbsm_excess_handling,
             default_tax_system,
             manual_default_tax_pct,
+            sidebar_defaults,
         )
         for _, row in products_df.iterrows()
     ]
