@@ -67,9 +67,13 @@ COLUMN_ALIASES = {
     "налог": "Налог, %",
     "налог, %": "Налог, %",
     "прочие расходы": "Прочие расходы, ₽",
+    "прочие расходы, ₽": "Прочие расходы, ₽",
     "целевая маржа": "Целевая маржа, %",
+    "целевая маржа, %": "Целевая маржа, %",
     "доля возвратов": "Доля возвратов, %",
+    "доля возвратов, %": "Доля возвратов, %",
     "доля невыкупа/отмен": "Доля невыкупа/отмен, %",
+    "доля невыкупа/отмен, %": "Доля невыкупа/отмен, %",
 }
 
 TAX_SYSTEMS = {
@@ -80,6 +84,35 @@ TAX_SYSTEMS = {
     "Своя ставка": None,
 }
 
+VISIBLE_COLUMNS = [
+    "Артикул",
+    "Наименование товара",
+    "Схема",
+    "Тарифная группа",
+    "Цена продажи, ₽",
+    "Рекомендованная цена, ₽",
+    "Себестоимость, ₽",
+    "Комиссия, %",
+    "Комиссия, ₽",
+    "Логистика до покупателя, ₽",
+    "Обратная логистика (ожидаемая), ₽",
+    "Хранение FBSM, ₽",
+    "Обработка брака, ₽",
+    "Обработка излишков, ₽",
+    "Реклама, ₽",
+    "Налог, ₽",
+    "Прочие расходы, ₽",
+    "Полная себестоимость, ₽",
+    "Выплата до себестоимости, ₽",
+    "Прибыль, ₽",
+    "Маржа к выручке, %",
+    "Наценка на полную себестоимость, %",
+    "Целевая маржа, %",
+    "Прибыль при рекомендованной цене, ₽",
+    "Маржа при рекомендованной цене, %",
+    "Комментарий",
+]
+
 
 def normalize_text(value: str) -> str:
     s = str(value or "").strip().lower()
@@ -88,49 +121,13 @@ def normalize_text(value: str) -> str:
     return " ".join(s.split())
 
 
-def ceil_to(value: float, step: float) -> float:
-    if value <= 0:
-        return 0.0
-    return math.ceil(value / step) * step
-
-
-def find_default_reference_file() -> Optional[Path]:
-    exact = DATA_DIR / DEFAULT_COMMISSIONS_FILENAME
-    if exact.exists():
-        return exact
-
-    patterns = [
-        "sportmaster_commissions*.xlsx",
-        "*Комисси*.xlsx",
-        "*комисси*.xlsx",
-        "*.xlsx",
-    ]
-    for pattern in patterns:
-        found = sorted(DATA_DIR.glob(pattern))
-        if found:
-            return found[0]
-    return None
-
-
-def get_reference_source_description(uploaded_file=None) -> str:
-    if uploaded_file is not None:
-        return f"загруженный файл: {uploaded_file.name}"
-    default_file = find_default_reference_file()
-    if default_file is not None:
-        return f"файл из repo: data/{default_file.name}"
-    return f"файл не найден; ожидается data/{DEFAULT_COMMISSIONS_FILENAME}"
-
-
-def read_reference(uploaded_file=None) -> pd.DataFrame:
-    if uploaded_file is not None:
-        src = uploaded_file
-    else:
-        src = find_default_reference_file()
-        if src is None:
-            raise FileNotFoundError(
-                f"Файл комиссий не найден. Положите его в папку data под названием "
-                f"'{DEFAULT_COMMISSIONS_FILENAME}' или загрузите через боковую панель."
-            )
+@st.cache_data(show_spinner=False)
+def read_reference() -> pd.DataFrame:
+    src = DATA_DIR / DEFAULT_COMMISSIONS_FILENAME
+    if not src.exists():
+        raise FileNotFoundError(
+            f"Не найден файл data/{DEFAULT_COMMISSIONS_FILENAME}. Положите его в repo в папку data."
+        )
 
     df = pd.read_excel(src)
     df.columns = [str(c).strip() for c in df.columns]
@@ -146,7 +143,12 @@ def read_reference(uploaded_file=None) -> pd.DataFrame:
     if missing:
         raise ValueError(f"В файле комиссий отсутствуют колонки: {', '.join(missing)}")
 
-    for col in ["Товарная группа 1 уровня", "Товарная группа 2 уровня", "Товарная группа 3 уровня", "Тарифная группа"]:
+    for col in [
+        "Товарная группа 1 уровня",
+        "Товарная группа 2 уровня",
+        "Товарная группа 3 уровня",
+        "Тарифная группа",
+    ]:
         df[col] = df[col].astype(str).str.strip()
         df[f"__norm_{col}"] = df[col].map(normalize_text)
 
@@ -193,6 +195,101 @@ def prepare_products(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@st.cache_data(show_spinner=False)
+def build_product_template_bytes() -> bytes:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Товары"
+    headers = PRODUCT_REQUIRED_COLS + PRODUCT_OPTIONAL_COLS
+    ws.append(headers)
+    sample_rows = [
+        [
+            "SM-001",
+            "Кроссовки беговые мужские",
+            2500,
+            5990,
+            0.8,
+            32,
+            22,
+            12,
+            "Обувь для взрослых и детей",
+            "Кроссовки",
+            0,
+            5,
+            "ОСНО (22%)",
+            0,
+            0,
+            20,
+            8,
+            3,
+        ],
+        [
+            "SM-002",
+            "Велосипед горный",
+            18000,
+            32990,
+            14.5,
+            145,
+            25,
+            78,
+            "Спортинвентарь",
+            "Велосипеды",
+            75,
+            7,
+            "УСН доходы (6%)",
+            0,
+            300,
+            18,
+            5,
+            2,
+        ],
+    ]
+    for row in sample_rows:
+        ws.append(row)
+
+    fills = PatternFill("solid", fgColor="1F4E78")
+    for cell in ws[1]:
+        cell.fill = fills
+        cell.font = Font(color="FFFFFF", bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    for idx, col in enumerate(headers, start=1):
+        width = max(14, min(34, len(col) + 4))
+        ws.column_dimensions[get_column_letter(idx)].width = width
+
+    guide = wb.create_sheet("Описание полей")
+    guide.append(["Колонка", "Описание"])
+    explanations = [
+        ("Артикул", "Обязательное поле."),
+        ("Наименование товара", "Обязательное поле. По нему тоже идет попытка автоподбора категории."),
+        ("Себестоимость, ₽", "Обязательное поле."),
+        ("Цена продажи, ₽", "Обязательное поле. От нее считаются комиссия, реклама и налог."),
+        ("Вес факт, кг", "Обязательное поле."),
+        ("Длина, см / Ширина, см / Высота, см", "Обязательные поля для расчета логистики FBS."),
+        ("Тарифная группа", "Необязательно. Если знаете точную группу, лучше заполнить."),
+        ("Товарная группа 3 уровня", "Необязательно. Используется для поиска комиссии."),
+        ("Дней хранения FBSM", "Нужно только для FBSM."),
+        ("Реклама, %", "Процент от цены продажи."),
+        ("Система налогообложения", "Например: ОСНО (22%), УСН доходы (6%), УСН доходы-расходы (15%), Без налога (0%)."),
+        ("Налог, %", "Если заполнено, эта ставка имеет приоритет над системой налогообложения."),
+        ("Прочие расходы, ₽", "Дополнительные постоянные расходы на единицу."),
+        ("Целевая маржа, %", "Для расчета рекомендованной цены."),
+        ("Доля возвратов, %", "Используется для ожидаемой обратной логистики FBSM."),
+        ("Доля невыкупа/отмен, %", "Используется для ожидаемой обратной логистики FBSM."),
+    ]
+    for row in explanations:
+        guide.append(row)
+    for cell in guide[1]:
+        cell.fill = fills
+        cell.font = Font(color="FFFFFF", bold=True)
+    guide.column_dimensions["A"].width = 34
+    guide.column_dimensions["B"].width = 100
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    return stream.getvalue()
+
+
 def normalize_commission_rate(value: float) -> float:
     v = float(value or 0.0)
     if v <= 1:
@@ -217,15 +314,15 @@ def resolve_tax_rate(row_tax_pct: float, row_tax_system: str, default_tax_system
 
     if row_tax_system:
         if row_tax_system in TAX_SYSTEMS and TAX_SYSTEMS[row_tax_system] is not None:
-            return float(TAX_SYSTEMS[row_tax_system]), f"Система из строки товара: {row_tax_system}"
+            return float(TAX_SYSTEMS[row_tax_system]), row_tax_system
         try:
             return float(str(row_tax_system).replace("%", "").replace(",", ".")), "Ставка из строки товара"
         except ValueError:
             pass
 
     if default_tax_system == "Своя ставка":
-        return float(manual_default_tax_pct), "Глобальная ставка из настроек"
-    return float(TAX_SYSTEMS.get(default_tax_system, 0.0) or 0.0), f"Глобальная система: {default_tax_system}"
+        return float(manual_default_tax_pct), f"Своя ставка ({manual_default_tax_pct:.1f}%)"
+    return float(TAX_SYSTEMS.get(default_tax_system, 0.0) or 0.0), default_tax_system
 
 
 def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_tariff_group: str, manual_group3: str) -> Tuple[str, str, Optional[float], str]:
@@ -269,11 +366,20 @@ def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_t
         score = max(score_lvl3, score_tariff, contains_score)
         candidates.append((score, str(row["Тарифная группа"]), str(row["Товарная группа 3 уровня"])))
 
+    if not candidates:
+        return "", "", None, "Не найдено"
+
     candidates.sort(reverse=True)
     best_score, best_tariff, best_lvl3 = candidates[0]
     if best_score >= 0.78:
         return best_tariff, best_lvl3, best_score, f"Автоподбор ({best_score:.2f})"
     return "", "", best_score, "Не найдено"
+
+
+def ceil_to(value: float, step: float) -> float:
+    if value <= 0:
+        return 0.0
+    return math.ceil(value / step) * step
 
 
 def calc_fbs_billable_weight(weight_kg: float, length_cm: float, width_cm: float, height_cm: float, basis: str) -> float:
@@ -295,10 +401,7 @@ def calc_fbs_billable_weight(weight_kg: float, length_cm: float, width_cm: float
 def calc_fbs_delivery(weight_kg: float, profile: str) -> float:
     if weight_kg <= 0:
         return 0.0
-    if profile == "220 + 90":
-        base, extra = 220.0, 90.0
-    else:
-        base, extra = 200.0, 70.0
+    base, extra = (220.0, 90.0) if profile == "220 + 90" else (200.0, 70.0)
     if weight_kg <= 2:
         return base
     return base + (weight_kg - 2) * extra
@@ -308,10 +411,7 @@ def calc_fbsm_delivery(weight_kg: float, profile: str) -> float:
     w = ceil_to(weight_kg, 0.1)
     if w <= 0:
         return 0.0
-    if profile == "56 / 90 / 60":
-        up05, up10, extra = 56.0, 90.0, 60.0
-    else:
-        up05, up10, extra = 35.0, 75.0, 35.0
+    up05, up10, extra = (56.0, 90.0, 60.0) if profile == "56 / 90 / 60" else (35.0, 75.0, 35.0)
     if w <= 0.5:
         return up05
     if w <= 1.0:
@@ -371,11 +471,8 @@ def calculate_row(
     tariff_group, lvl3_group, match_score, match_note = resolve_tariff_group(
         reference_df, name, row.get("Тарифная группа", ""), row.get("Товарная группа 3 уровня", "")
     )
-    commission_pct = commission_rate_for_tariff_group(reference_df, tariff_group, scheme)
-    if commission_pct is None:
-        commission_pct = 0.0
-
-    tax_pct, tax_note = resolve_tax_rate(row_tax_pct, row_tax_system, default_tax_system, manual_default_tax_pct)
+    commission_pct = commission_rate_for_tariff_group(reference_df, tariff_group, scheme) or 0.0
+    tax_pct, tax_system_label = resolve_tax_rate(row_tax_pct, row_tax_system, default_tax_system, manual_default_tax_pct)
 
     commission_rub = price * commission_pct / 100.0
     ad_cost_rub = price * ads_pct / 100.0
@@ -387,13 +484,10 @@ def calculate_row(
     defect_handling = 0.0
     excess_handling = 0.0
     billable_weight = 0.0
-    logistics_note = ""
 
     if scheme == "FBS":
         billable_weight = calc_fbs_billable_weight(actual_weight, length, width, height, fbs_weight_basis)
         logistics_to_buyer = calc_fbs_delivery(billable_weight, fbs_logistics_profile)
-        logistics_note = f"FBS: {fbs_logistics_profile}, вес для тарифа = {billable_weight:.0f} кг"
-        reverse_logistics = 0.0
     else:
         billable_weight = ceil_to(actual_weight, 0.1)
         logistics_to_buyer = calc_fbsm_delivery(billable_weight, fbsm_logistics_profile)
@@ -402,14 +496,13 @@ def calculate_row(
         storage_rub = calc_fbsm_storage(actual_weight, storage_days)
         defect_handling = 30.0 if include_fbsm_defect_handling else 0.0
         excess_handling = 30.0 if include_fbsm_excess_handling else 0.0
-        logistics_note = f"FBSM: {fbsm_logistics_profile}, вес для тарифа = {billable_weight:.1f} кг"
 
     mp_services_rub = logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling
     payout_before_seller_costs = price - commission_rub - mp_services_rub
     full_cost = cost + commission_rub + mp_services_rub + ad_cost_rub + tax_rub + other_costs
     profit = price - full_cost
     margin_on_revenue = (profit / price) if price else 0.0
-    markup_on_cost = (profit / full_cost) if full_cost else 0.0
+    markup_on_full_cost = (price / full_cost - 1) if full_cost else 0.0
 
     target_price = None
     target_margin_profit_rub = None
@@ -431,8 +524,6 @@ def calculate_row(
         warnings.append("Не определена тарифная группа")
     if commission_pct == 0:
         warnings.append("Комиссия не найдена")
-    if scheme == "FBSM" and storage_days > 60 and storage_rub == 0:
-        warnings.append("Проверьте хранение")
 
     return {
         "Артикул": sku,
@@ -442,8 +533,9 @@ def calculate_row(
         "Товарная группа 3 уровня": lvl3_group,
         "Как определили категорию": match_note,
         "Совпадение, score": round(match_score or 0.0, 2) if match_score is not None else 0.0,
-        "Система налогообложения": tax_note,
+        "Налоговый режим": tax_system_label,
         "Цена продажи, ₽": round(price, 2),
+        "Рекомендованная цена, ₽": round(target_price, 2) if target_price else None,
         "Себестоимость, ₽": round(cost, 2),
         "Комиссия, %": round(commission_pct / 100.0, 4),
         "Комиссия, ₽": round(commission_rub, 2),
@@ -461,12 +553,10 @@ def calculate_row(
         "Полная себестоимость, ₽": round(full_cost, 2),
         "Прибыль, ₽": round(profit, 2),
         "Маржа к выручке, %": round(margin_on_revenue, 4),
-        "Наценка на затраты, %": round(markup_on_cost, 4),
+        "Наценка на полную себестоимость, %": round(markup_on_full_cost, 4),
         "Целевая маржа, %": round(target_margin / 100.0, 4),
-        "Рекомендованная цена, ₽": round(target_price, 2) if target_price else None,
         "Прибыль при рекомендованной цене, ₽": round(target_margin_profit_rub, 2) if target_margin_profit_rub is not None else None,
         "Маржа при рекомендованной цене, %": round(target_margin_pct_fact, 4) if target_margin_pct_fact is not None else None,
-        "Логистическая модель": logistics_note,
         "Комментарий": "; ".join(warnings),
     }
 
@@ -476,63 +566,77 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
     ws = wb.active
     ws.title = "Результаты"
 
-    headers = list(result_df.columns)
-    ws.append(headers)
-    for row in result_df.itertuples(index=False):
+    export_df = result_df.copy()
+    ws.append(list(export_df.columns))
+    for row in export_df.itertuples(index=False):
         ws.append(list(row))
 
     header_fill = PatternFill("solid", fgColor="1F4E78")
-    summary_fill = PatternFill("solid", fgColor="E2F0D9")
+    total_fill = PatternFill("solid", fgColor="E2F0D9")
+
     for cell in ws[1]:
         cell.fill = header_fill
         cell.font = Font(color="FFFFFF", bold=True)
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-    money_cols = {c for c in headers if "₽" in c}
-    pct_cols = {"Комиссия, %", "Налог, %", "Маржа к выручке, %", "Наценка на затраты, %", "Целевая маржа, %", "Маржа при рекомендованной цене, %"}
+    money_cols = {c for c in export_df.columns if "₽" in c}
+    pct_cols = {
+        "Комиссия, %",
+        "Налог, %",
+        "Маржа к выручке, %",
+        "Наценка на полную себестоимость, %",
+        "Целевая маржа, %",
+        "Маржа при рекомендованной цене, %",
+    }
+
     for row in ws.iter_rows(min_row=2):
         for cell in row:
-            col_name = headers[cell.column - 1]
+            col_name = export_df.columns[cell.column - 1]
             if col_name in money_cols and isinstance(cell.value, (int, float)):
                 cell.number_format = '#,##0.00_);[Red](#,##0.00)'
             elif col_name in pct_cols and isinstance(cell.value, (int, float)):
                 cell.number_format = '0.0%'
             cell.alignment = Alignment(vertical="center", wrap_text=True)
 
-    for col_idx, col_name in enumerate(headers, start=1):
-        max_len = max(len(str(col_name)), *(len(str(ws.cell(r, col_idx).value or "")) for r in range(2, ws.max_row + 1)))
-        ws.column_dimensions[get_column_letter(col_idx)].width = min(max(max_len + 2, 14), 36)
-
     total_row = ws.max_row + 2
     ws.cell(total_row, 1).value = "ИТОГО / СРЕДНЕЕ"
-    for cell in ws[total_row]:
-        cell.fill = summary_fill
-        cell.font = Font(bold=True)
-    for idx, col_name in enumerate(headers, start=1):
+    for idx, col_name in enumerate(export_df.columns, start=1):
         col_letter = get_column_letter(idx)
+        cell = ws.cell(total_row, idx)
+        cell.fill = total_fill
+        cell.font = Font(bold=True)
         if col_name in money_cols:
-            ws.cell(total_row, idx).value = f"=SUM({col_letter}2:{col_letter}{total_row-2})"
-            ws.cell(total_row, idx).number_format = '#,##0.00_);[Red](#,##0.00)'
+            cell.value = f"=SUM({col_letter}2:{col_letter}{total_row - 2})"
+            cell.number_format = '#,##0.00_);[Red](#,##0.00)'
         elif col_name in pct_cols:
-            ws.cell(total_row, idx).value = f"=AVERAGE({col_letter}2:{col_letter}{total_row-2})"
-            ws.cell(total_row, idx).number_format = '0.0%'
+            cell.value = f"=AVERAGE({col_letter}2:{col_letter}{total_row - 2})"
+            cell.number_format = '0.0%'
+
+    for col_idx, col_name in enumerate(export_df.columns, start=1):
+        max_len = len(str(col_name))
+        for row_idx in range(2, ws.max_row + 1):
+            max_len = max(max_len, len(str(ws.cell(row_idx, col_idx).value or "")))
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max(max_len + 2, 12), 32)
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
 
-    guide = wb.create_sheet("Как читать")
-    guide.append(["Показатель", "Пояснение"])
-    guide.append(["Выплата до себестоимости, ₽", "Цена продажи минус комиссия Спортмастера и услуги маркетплейса."])
-    guide.append(["Полная себестоимость, ₽", "Себестоимость товара + комиссия + услуги МП + реклама + налог + прочие расходы."])
-    guide.append(["Маржа к выручке, %", "Прибыль / цена продажи."])
-    guide.append(["Наценка на затраты, %", "Прибыль / полная себестоимость."])
-    guide.append(["Рекомендованная цена, ₽", "Цена для достижения целевой маржи с учетом текущей структуры затрат."])
-    guide.append(["Маржа при рекомендованной цене, %", "Фактическая маржа при рассчитанной рекомендованной цене."])
-    for c in guide[1]:
-        c.fill = header_fill
-        c.font = Font(color="FFFFFF", bold=True)
-    guide.column_dimensions["A"].width = 34
-    guide.column_dimensions["B"].width = 90
+    guide = wb.create_sheet("Пояснения")
+    guide.append(["Показатель", "Описание"])
+    explanations = [
+        ("Выплата до себестоимости, ₽", "Цена продажи минус комиссия Спортмастера и услуги маркетплейса."),
+        ("Полная себестоимость, ₽", "Себестоимость товара плюс комиссия, логистика, хранение, реклама, налог и прочие расходы."),
+        ("Маржа к выручке, %", "Прибыль / цена продажи."),
+        ("Наценка на полную себестоимость, %", "Цена продажи / полная себестоимость - 1."),
+        ("Рекомендованная цена, ₽", "Цена для достижения целевой маржи с учетом текущих параметров."),
+    ]
+    for row in explanations:
+        guide.append(row)
+    for cell in guide[1]:
+        cell.fill = header_fill
+        cell.font = Font(color="FFFFFF", bold=True)
+    guide.column_dimensions["A"].width = 36
+    guide.column_dimensions["B"].width = 92
 
     stream = io.BytesIO()
     wb.save(stream)
@@ -540,48 +644,27 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
     return stream.getvalue()
 
 
-def render_single_result(result: Dict) -> None:
-    st.success("Расчет готов")
+def render_overview_metrics(result_df: pd.DataFrame) -> None:
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Выплата до себестоимости", f"{result['Выплата до себестоимости, ₽']:.2f} ₽")
-    c2.metric("Прибыль", f"{result['Прибыль, ₽']:.2f} ₽")
-    c3.metric("Маржа к выручке", f"{result['Маржа к выручке, %']:.1%}")
-    c4.metric("Полная себестоимость", f"{result['Полная себестоимость, ₽']:.2f} ₽")
-
-    if result.get("Рекомендованная цена, ₽"):
-        x1, x2, x3 = st.columns(3)
-        x1.metric("Рекомендованная цена", f"{result['Рекомендованная цена, ₽']:.2f} ₽")
-        x2.metric("Прибыль при рекоменд. цене", f"{result['Прибыль при рекомендованной цене, ₽']:.2f} ₽")
-        x3.metric("Маржа при рекоменд. цене", f"{result['Маржа при рекомендованной цене, %']:.1%}")
-
-    detail_cols = [
-        "Комиссия, ₽",
-        "Логистика до покупателя, ₽",
-        "Обратная логистика (ожидаемая), ₽",
-        "Хранение FBSM, ₽",
-        "Обработка брака, ₽",
-        "Обработка излишков, ₽",
-        "Реклама, ₽",
-        "Налог, ₽",
-        "Прочие расходы, ₽",
-    ]
-    df = pd.DataFrame({"Статья": detail_cols, "Сумма, ₽": [result[c] for c in detail_cols]})
-    st.subheader("Структура расходов")
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    st.bar_chart(df.set_index("Статья")["Сумма, ₽"])
-
-    with st.expander("Детали"):
-        st.write(pd.DataFrame([result]).T)
+    c1.metric("SKU", f"{len(result_df)}")
+    c2.metric("Суммарная прибыль", f"{result_df['Прибыль, ₽'].sum():,.2f} ₽")
+    c3.metric("Средняя маржа", f"{result_df['Маржа к выручке, %'].mean():.1%}")
+    c4.metric("Средняя рекомендованная цена", f"{result_df['Рекомендованная цена, ₽'].dropna().mean():,.2f} ₽" if result_df['Рекомендованная цена, ₽'].notna().any() else "—")
 
 
 def app() -> None:
     st.set_page_config(page_title="Спортмастер — юнит-экономика", page_icon="🏃", layout="wide")
     st.title("🏃 Спортмастер — юнит-экономика")
-    st.caption("FBS и FBSM • автоматический расчет логистики • Excel-шаблон и Excel-выгрузка")
+    st.caption("Массовая загрузка товаров через Excel • массовая Excel-выгрузка • FBS и FBSM")
+
+    try:
+        reference_df = read_reference()
+    except Exception as e:
+        st.error(str(e))
+        st.stop()
 
     with st.sidebar:
-        st.header("Настройки расчета")
-        page = st.radio("Раздел", ["Калькулятор", "Пакетный расчет", "Справка"], index=0)
+        st.header("Параметры расчета")
         scheme = st.selectbox("Схема", ["FBS", "FBSM"], index=0)
 
         st.subheader("Налогообложение")
@@ -590,14 +673,12 @@ def app() -> None:
         if default_tax_system == "Своя ставка":
             manual_default_tax_pct = st.number_input("Своя ставка налога, %", min_value=0.0, value=6.0, step=0.5)
 
-        st.subheader("Файл комиссий Sportmaster")
-        ref_upload = st.file_uploader("Загрузить файл комиссий (опционально)", type=["xlsx"])
-        st.caption(f"Сейчас используется: {get_reference_source_description(ref_upload)}")
-        st.caption(f"Для repo положите файл сюда: data/{DEFAULT_COMMISSIONS_FILENAME}")
-
-        st.markdown("---")
         st.subheader("Логистика FBS")
-        fbs_weight_basis = st.selectbox("Основа веса", ["Консервативно (макс из Почты/СДЭК)", "Почта России", "СДЭК", "Фактический"], index=0)
+        fbs_weight_basis_ui = st.selectbox(
+            "Основа веса",
+            ["Консервативно (макс из Почты/СДЭК)", "Почта России", "СДЭК", "Фактический"],
+            index=0,
+        )
         fbs_weight_basis_map = {
             "Консервативно (макс из Почты/СДЭК)": "Консервативно",
             "Почта России": "Почта России",
@@ -606,65 +687,68 @@ def app() -> None:
         }
         fbs_logistics_profile = st.selectbox("Тариф FBS", ["200 + 70", "220 + 90"], index=0)
 
-        st.subheader("Логистика FBSM")
+        st.subheader("Параметры FBSM")
         fbsm_logistics_profile = st.selectbox("Тариф FBSM", ["35 / 75 / 35", "56 / 90 / 60"], index=0)
-        include_fbsm_return_logistics = st.checkbox("Учитывать ожидаемую обратную логистику FBSM", value=True)
-        include_fbsm_defect_handling = st.checkbox("Добавлять обработку брака 30 ₽/шт", value=False)
-        include_fbsm_excess_handling = st.checkbox("Добавлять обработку излишков 30 ₽/шт", value=False)
+        include_fbsm_return_logistics = st.checkbox("Учитывать обратную логистику FBSM", value=True)
+        include_fbsm_defect_handling = st.checkbox("Учитывать обработку брака 30 ₽/шт", value=False)
+        include_fbsm_excess_handling = st.checkbox("Учитывать обработку излишков 30 ₽/шт", value=False)
 
         st.markdown("---")
-        if PRODUCT_TEMPLATE_FILE.exists():
-            with open(PRODUCT_TEMPLATE_FILE, "rb") as f:
-                st.download_button("Скачать шаблон товаров", f.read(), file_name=PRODUCT_TEMPLATE_FILE.name)
-
-        default_ref_file = find_default_reference_file()
-        if default_ref_file and default_ref_file.exists():
-            with open(default_ref_file, "rb") as f:
-                st.download_button("Скачать текущий файл комиссий", f.read(), file_name=default_ref_file.name)
-
-    try:
-        reference_df = read_reference(ref_upload)
-    except Exception as e:
-        st.error(f"Не удалось прочитать файл комиссий: {e}")
-        st.info(
-            f"Решение: положите Excel-файл комиссий в папку repo `data/` под названием "
-            f"`{DEFAULT_COMMISSIONS_FILENAME}` или загрузите его вручную в боковой панели."
+        st.download_button(
+            "Скачать шаблон товаров Excel",
+            data=build_product_template_bytes(),
+            file_name="Шаблон_товаров_Спортмастер.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
         )
-        st.stop()
 
-    if page == "Справка":
-        st.subheader("Что важно по файлу комиссий")
-        st.markdown(
-            f"""
-            - основной файл комиссий ищется автоматически в папке `data`;
-            - рекомендуемое имя файла в repo: `{DEFAULT_COMMISSIONS_FILENAME}`;
-            - можно просто заменить файл в repo, и приложение начнет использовать его автоматически;
-            - если файла в repo нет, его можно временно загрузить через боковую панель.
-            """
-        )
-        st.subheader("Налоги")
-        st.markdown(
-            """
-            В приложении добавлен выбор системы налогообложения:
-            - ОСНО 22%
-            - УСН доходы 6%
-            - УСН доходы-расходы 15%
-            - Без налога
-            - Своя ставка
+    products_file = st.file_uploader("Загрузите Excel-файл с товарами", type=["xlsx"])
 
-            В пакетном файле можно задать колонку **«Система налогообложения»** или **«Налог, %»**.
-            Если эти поля пустые, применяется глобальная настройка из боковой панели.
-            """
-        )
-        tariff_table = reference_df[["Тарифная группа", "Ставка комиссии FBSM, %", "Ставка комиссии FBS, %"]].drop_duplicates().sort_values("Тарифная группа")
-        tariff_table["Ставка комиссии FBSM, %"] = tariff_table["Ставка комиссии FBSM, %"].apply(normalize_commission_rate)
-        tariff_table["Ставка комиссии FBS, %"] = tariff_table["Ставка комиссии FBS, %"].apply(normalize_commission_rate)
-        st.subheader("Справочник тарифных групп")
-        st.dataframe(tariff_table, use_container_width=True, height=500)
-        return
+    tab1, tab2 = st.tabs(["Пакетный расчет", "Калькулятор 1 SKU"])
 
-    if page == "Калькулятор":
-        st.header("Калькулятор 1 SKU")
+    with tab1:
+        if products_file is None:
+            st.info("Загрузите Excel по шаблону. После загрузки таблица и рекомендованные цены пересчитываются автоматически при изменении параметров слева.")
+        else:
+            try:
+                products_df = prepare_products(pd.read_excel(products_file))
+            except Exception as e:
+                st.error(f"Ошибка в файле товаров: {e}")
+                st.stop()
+
+            result_rows = []
+            for _, row in products_df.iterrows():
+                result_rows.append(
+                    calculate_row(
+                        row,
+                        reference_df,
+                        scheme,
+                        fbs_weight_basis_map[fbs_weight_basis_ui],
+                        fbs_logistics_profile,
+                        fbsm_logistics_profile,
+                        include_fbsm_return_logistics,
+                        include_fbsm_defect_handling,
+                        include_fbsm_excess_handling,
+                        default_tax_system,
+                        manual_default_tax_pct,
+                    )
+                )
+            result_df = pd.DataFrame(result_rows)
+            display_df = result_df[[c for c in VISIBLE_COLUMNS if c in result_df.columns]].copy()
+            render_overview_metrics(display_df)
+            st.dataframe(display_df, use_container_width=True, hide_index=True, height=620)
+
+            export_bytes = build_export_workbook(result_df)
+            st.download_button(
+                "Скачать результат в Excel",
+                data=export_bytes,
+                file_name=f"Спортмастер_юнит-экономика_{scheme}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+
+    with tab2:
+        st.write("Параметры меняете — результат пересчитывается сразу, без кнопки.")
         c1, c2, c3 = st.columns(3)
         with c1:
             sku = st.text_input("Артикул", value="SKU-001")
@@ -677,98 +761,51 @@ def app() -> None:
             width = st.number_input("Ширина, см", min_value=0.0, value=22.0, step=1.0)
             height = st.number_input("Высота, см", min_value=0.0, value=12.0, step=1.0)
         with c3:
-            manual_tariff = st.text_input("Тарифная группа (если знаете)", value="Обувь для взрослых и детей")
-            manual_lvl3 = st.text_input("Товарная группа 3 уровня (если знаете)", value="")
+            manual_tariff = st.text_input("Тарифная группа", value="")
+            manual_lvl3 = st.text_input("Товарная группа 3 уровня", value="")
             storage_days = st.number_input("Дней хранения FBSM", min_value=0.0, value=0.0, step=1.0)
             ads_pct = st.number_input("Реклама, %", min_value=0.0, value=5.0, step=0.5)
-            row_tax_pct = st.number_input("Налог, % (если нужно переопределить)", min_value=0.0, value=0.0, step=0.5)
+            row_tax_pct = st.number_input("Налог, %", min_value=0.0, value=0.0, step=0.5)
             other_costs = st.number_input("Прочие расходы, ₽", min_value=0.0, value=0.0, step=50.0)
             target_margin = st.number_input("Целевая маржа, %", min_value=0.0, value=20.0, step=1.0)
             return_rate = st.number_input("Доля возвратов, %", min_value=0.0, value=8.0, step=0.5)
             cancel_rate = st.number_input("Доля невыкупа/отмен, %", min_value=0.0, value=3.0, step=0.5)
 
-        if st.button("Рассчитать", type="primary", use_container_width=True):
-            source_df = pd.DataFrame([{
-                "Артикул": sku,
-                "Наименование товара": name,
-                "Себестоимость, ₽": cost,
-                "Цена продажи, ₽": price,
-                "Вес факт, кг": weight,
-                "Длина, см": length,
-                "Ширина, см": width,
-                "Высота, см": height,
-                "Тарифная группа": manual_tariff,
-                "Товарная группа 3 уровня": manual_lvl3,
-                "Дней хранения FBSM": storage_days,
-                "Реклама, %": ads_pct,
-                "Система налогообложения": "",
-                "Налог, %": row_tax_pct,
-                "Прочие расходы, ₽": other_costs,
-                "Целевая маржа, %": target_margin,
-                "Доля возвратов, %": return_rate,
-                "Доля невыкупа/отмен, %": cancel_rate,
-            }])
-            result = calculate_row(
-                source_df.iloc[0],
-                reference_df,
-                scheme,
-                fbs_weight_basis_map[fbs_weight_basis],
-                fbs_logistics_profile,
-                fbsm_logistics_profile,
-                include_fbsm_return_logistics,
-                include_fbsm_defect_handling,
-                include_fbsm_excess_handling,
-                default_tax_system,
-                manual_default_tax_pct,
-            )
-            render_single_result(result)
-
-    if page == "Пакетный расчет":
-        st.header("Пакетный расчет и выгрузка Excel")
-        products_file = st.file_uploader("Загрузите Excel с товарами", type=["xlsx"])
-        if products_file is None:
-            st.info("Загрузите файл товаров по шаблону. Шаблон можно скачать в боковой панели.")
-            return
-
-        try:
-            products_df = prepare_products(pd.read_excel(products_file))
-        except Exception as e:
-            st.error(f"Ошибка в файле товаров: {e}")
-            st.stop()
-
-        result_rows = []
-        for _, row in products_df.iterrows():
-            result_rows.append(
-                calculate_row(
-                    row,
-                    reference_df,
-                    scheme,
-                    fbs_weight_basis_map[fbs_weight_basis],
-                    fbs_logistics_profile,
-                    fbsm_logistics_profile,
-                    include_fbsm_return_logistics,
-                    include_fbsm_defect_handling,
-                    include_fbsm_excess_handling,
-                    default_tax_system,
-                    manual_default_tax_pct,
-                )
-            )
-        result_df = pd.DataFrame(result_rows)
-        st.dataframe(result_df, use_container_width=True, height=550)
-
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("SKU", len(result_df))
-        m2.metric("Средняя маржа", f"{result_df['Маржа к выручке, %'].mean():.1%}")
-        m3.metric("Суммарная прибыль", f"{result_df['Прибыль, ₽'].sum():,.2f} ₽")
-        m4.metric("Средняя выплата до себестоимости", f"{result_df['Выплата до себестоимости, ₽'].mean():,.2f} ₽")
-
-        export_bytes = build_export_workbook(result_df)
-        st.download_button(
-            "Скачать Excel-выгрузку",
-            data=export_bytes,
-            file_name=f"Спортмастер_юнит-экономика_{scheme}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        one_row = pd.DataFrame([{
+            "Артикул": sku,
+            "Наименование товара": name,
+            "Себестоимость, ₽": cost,
+            "Цена продажи, ₽": price,
+            "Вес факт, кг": weight,
+            "Длина, см": length,
+            "Ширина, см": width,
+            "Высота, см": height,
+            "Тарифная группа": manual_tariff,
+            "Товарная группа 3 уровня": manual_lvl3,
+            "Дней хранения FBSM": storage_days,
+            "Реклама, %": ads_pct,
+            "Система налогообложения": "",
+            "Налог, %": row_tax_pct,
+            "Прочие расходы, ₽": other_costs,
+            "Целевая маржа, %": target_margin,
+            "Доля возвратов, %": return_rate,
+            "Доля невыкупа/отмен, %": cancel_rate,
+        }])
+        result = calculate_row(
+            one_row.iloc[0],
+            reference_df,
+            scheme,
+            fbs_weight_basis_map[fbs_weight_basis_ui],
+            fbs_logistics_profile,
+            fbsm_logistics_profile,
+            include_fbsm_return_logistics,
+            include_fbsm_defect_handling,
+            include_fbsm_excess_handling,
+            default_tax_system,
+            manual_default_tax_pct,
         )
+        single_df = pd.DataFrame([[result.get(c) for c in VISIBLE_COLUMNS]], columns=VISIBLE_COLUMNS)
+        st.dataframe(single_df, use_container_width=True, hide_index=True)
 
 
 if __name__ == "__main__":
