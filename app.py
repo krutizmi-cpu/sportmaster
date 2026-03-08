@@ -541,10 +541,48 @@ def calc_fbsm_storage(weight_kg: float, storage_days: float) -> float:
     return w * 3 * days_61_90 + w * 6 * days_91_plus
 
 
-def solve_target_price(target_margin_pct: float, cost_fixed_rub: float, variable_rate_pct: float) -> Optional[float]:
+def is_profit_based_tax_system(tax_system_label: str) -> bool:
+    label = str(tax_system_label or "").lower()
+    return "осно" in label or "доходы-расходы" in label
+
+
+def calc_tax_amount(
+    price: float,
+    tax_pct: float,
+    tax_system_label: str,
+    cost: float,
+    commission_rub: float,
+    mp_services_rub: float,
+    ad_cost_rub: float,
+    other_costs: float,
+) -> float:
+    rate = tax_pct / 100.0
+    if rate <= 0 or price <= 0:
+        return 0.0
+
+    if is_profit_based_tax_system(tax_system_label):
+        profit_before_tax = price - cost - commission_rub - mp_services_rub - ad_cost_rub - other_costs
+        return max(profit_before_tax, 0.0) * rate
+
+    return price * rate
+
+
+def solve_target_price(
+    target_margin_pct: float,
+    cost_fixed_rub: float,
+    variable_rate_pct: float,
+    tax_pct: float,
+    tax_system_label: str,
+) -> Optional[float]:
     t = target_margin_pct / 100.0
     v = variable_rate_pct / 100.0
-    denominator = 1 - v - t
+    r = tax_pct / 100.0
+
+    if is_profit_based_tax_system(tax_system_label):
+        denominator = (1 - r) * (1 - v) - t
+        return None if denominator <= 0 else cost_fixed_rub * (1 - r) / denominator
+
+    denominator = 1 - v - r - t
     return None if denominator <= 0 else cost_fixed_rub / denominator
 
 
@@ -587,7 +625,7 @@ def calculate_row(
 
     commission_rub = price * commission_pct / 100.0
     ad_cost_rub = price * ads_pct / 100.0
-    tax_rub = price * tax_pct / 100.0
+    tax_rub = 0.0
 
     logistics_to_buyer = reverse_logistics = storage_rub = defect_handling = excess_handling = billable_weight = 0.0
     if scheme == "FBS":
@@ -603,6 +641,16 @@ def calculate_row(
         excess_handling = 30.0 if include_fbsm_excess_handling else 0.0
 
     mp_services_rub = logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling
+    tax_rub = calc_tax_amount(
+        price=price,
+        tax_pct=tax_pct,
+        tax_system_label=tax_system_label,
+        cost=cost,
+        commission_rub=commission_rub,
+        mp_services_rub=mp_services_rub,
+        ad_cost_rub=ad_cost_rub,
+        other_costs=other_costs,
+    )
     payout_before_seller_costs = price - commission_rub - mp_services_rub
     full_cost = cost + commission_rub + mp_services_rub + ad_cost_rub + tax_rub + other_costs
     profit = price - full_cost
@@ -611,13 +659,28 @@ def calculate_row(
 
     target_price = target_margin_profit_rub = target_margin_pct_fact = None
     fixed_costs = cost + logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling + other_costs
-    variable_rate = commission_pct + ads_pct + tax_pct
+    variable_rate = commission_pct + ads_pct
     if target_margin > 0:
-        target_price = solve_target_price(target_margin, fixed_costs, variable_rate)
+        target_price = solve_target_price(
+            target_margin_pct=target_margin,
+            cost_fixed_rub=fixed_costs,
+            variable_rate_pct=variable_rate,
+            tax_pct=tax_pct,
+            tax_system_label=tax_system_label,
+        )
         if target_price:
             target_commission = target_price * commission_pct / 100.0
             target_ads = target_price * ads_pct / 100.0
-            target_tax = target_price * tax_pct / 100.0
+            target_tax = calc_tax_amount(
+                price=target_price,
+                tax_pct=tax_pct,
+                tax_system_label=tax_system_label,
+                cost=cost,
+                commission_rub=target_commission,
+                mp_services_rub=mp_services_rub,
+                ad_cost_rub=target_ads,
+                other_costs=other_costs,
+            )
             target_full_cost = cost + mp_services_rub + other_costs + target_commission + target_ads + target_tax
             target_margin_profit_rub = target_price - target_full_cost
             target_margin_pct_fact = (target_margin_profit_rub / target_price) if target_price else None
