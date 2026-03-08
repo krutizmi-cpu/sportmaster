@@ -49,35 +49,23 @@ COLUMN_ALIASES = {
     "товар": "Наименование товара",
     "себестоимость": "Себестоимость, ₽",
     "себестоимость руб": "Себестоимость, ₽",
-    "себестоимость ₽": "Себестоимость, ₽",
     "цена": "Цена продажи, ₽",
     "цена продажи": "Цена продажи, ₽",
-    "цена продажи ₽": "Цена продажи, ₽",
     "price": "Цена продажи, ₽",
     "вес": "Вес факт, кг",
     "вес кг": "Вес факт, кг",
     "вес факт": "Вес факт, кг",
-    "вес факт кг": "Вес факт, кг",
     "длина": "Длина, см",
-    "длина см": "Длина, см",
     "ширина": "Ширина, см",
-    "ширина см": "Ширина, см",
     "высота": "Высота, см",
-    "высота см": "Высота, см",
     "дней хранения fbsm": "Дней хранения FBSM",
     "реклама": "Реклама, %",
-    "реклама %": "Реклама, %",
     "система налогообложения": "Система налогообложения",
     "налог": "Налог, %",
-    "налог %": "Налог, %",
     "прочие расходы": "Прочие расходы, ₽",
-    "прочие расходы ₽": "Прочие расходы, ₽",
     "целевая маржа": "Целевая маржа, %",
-    "целевая маржа %": "Целевая маржа, %",
     "доля возвратов": "Доля возвратов, %",
-    "доля возвратов %": "Доля возвратов, %",
     "доля невыкупа отмен": "Доля невыкупа/отмен, %",
-    "доля невыкупа отмен %": "Доля невыкупа/отмен, %",
     "тарифная группа": "Тарифная группа",
     "товарная группа 3 уровня": "Товарная группа 3 уровня",
 }
@@ -102,16 +90,21 @@ VISIBLE_COLUMNS = [
     "Себестоимость, ₽",
     "Комиссия, %",
     "Комиссия, ₽",
+    "Вес для тарифа, кг",
     "Логистика до покупателя, ₽",
     "Обратная логистика (ожидаемая), ₽",
     "Хранение FBSM, ₽",
     "Обработка брака, ₽",
     "Обработка излишков, ₽",
+    "Реклама, %",
     "Реклама, ₽",
+    "Налоговый режим",
+    "Ставка налога, %",
+    "Налоговая база, ₽",
     "Налог, ₽",
     "Прочие расходы, ₽",
+    "Выплата от МП, ₽",
     "Полная себестоимость, ₽",
-    "Выплата до себестоимости, ₽",
     "Прибыль, ₽",
     "Маржа к выручке, %",
     "Наценка на полную себестоимость, %",
@@ -132,41 +125,38 @@ TOKEN_SYNONYMS = {
     "велосипедный": "велосипед",
     "велосипедная": "велосипед",
     "велосипедные": "велосипед",
-    "электровелосипеды": "электровелосипед",
+    "велозамок": "замок",
+    "велошлем": "шлем",
+    "велофонарь": "фонар",
+    "велозвонок": "звонок",
+    "велонасос": "насос",
+    "вело": "велосипед",
     "кроссовки": "кроссовк",
     "ботинки": "ботинк",
     "перчатки": "перчатк",
     "варежки": "варежк",
     "мячи": "мяч",
     "гантели": "гантел",
-    "вело": "велосипед",
-    "велоаксессуар": "велосипед",
     "горный": "горн",
     "беговые": "бег",
     "беговой": "бег",
     "лыжи": "лыж",
     "самокаты": "самокат",
-    "велошлем": "шлем",
-    "велозамок": "замок",
     "замки": "замок",
-    "бег": "бег",
-    "фонарь": "фонар",
     "фонари": "фонар",
-    "держатель": "держател",
     "держатели": "держател",
     "крылья": "крыл",
-    "крыло": "крыл",
     "насосы": "насос",
-    "насос": "насос",
     "звонки": "звонок",
     "шлемы": "шлем",
     "седла": "седло",
-    "седло": "седло",
     "корзины": "корзин",
-    "корзина": "корзин",
+    "крепления": "креплен",
 }
 
 CATEGORY_OVERRIDE_RULES = [
+    {"all": {"велосипед", "горн"}, "lvl3": "Велосипеды"},
+    {"all": {"кроссовк", "бег"}, "lvl3": "Кроссовки для бега"},
     {"all": {"велосипед", "замок"}, "lvl3": "Замки для велосипеда"},
     {"all": {"замок"}, "any": {"велосипед", "вело"}, "lvl3": "Замки для велосипеда"},
     {"all": {"велосипед", "шлем"}, "lvl3": "Шлемы велосипедные"},
@@ -180,13 +170,10 @@ CATEGORY_OVERRIDE_RULES = [
     {"all": {"велосипед", "крыл"}, "lvl3": "Крылья для велосипеда"},
     {"all": {"крыл"}, "any": {"велосипед", "вело"}, "lvl3": "Крылья для велосипеда"},
     {"all": {"велосипед", "корзин"}, "lvl3": "Корзины для велосипеда"},
-    {"all": {"корзин"}, "any": {"велосипед", "вело"}, "lvl3": "Корзины для велосипеда"},
     {"all": {"велосипед", "насос"}, "lvl3": "Насосы для велосипеда"},
     {"all": {"насос"}, "any": {"велосипед", "вело"}, "lvl3": "Насосы для велосипеда"},
     {"all": {"велосипед", "седло"}, "lvl3": "Седла для велосипеда"},
-    {"all": {"седло"}, "any": {"велосипед", "вело"}, "lvl3": "Седла для велосипеда"},
-    {"all": {"кроссовк", "бег"}, "lvl3": "Кроссовки для бега"},
-    {"all": {"велосипед", "горн"}, "lvl3": "Велосипеды"},
+    {"all": {"велосипед", "креплен"}, "lvl3": "Крепления для велосипеда"},
 ]
 
 
@@ -202,7 +189,7 @@ def stem_token(token: str) -> str:
         return TOKEN_SYNONYMS[t]
     for suffix in ["иями", "ями", "ами", "иях", "ия", "ья", "ье", "ий", "ый", "ой", "ая", "яя", "ое", "ее", "ые", "ие", "ам", "ям", "ах", "ях", "ом", "ем", "ую", "юю", "ов", "ев", "ей", "а", "я", "ы", "и", "е", "о", "у", "ю"]:
         if len(t) >= 6 and t.endswith(suffix):
-            t = t[: -len(suffix)]
+            t = t[:-len(suffix)]
             break
     return TOKEN_SYNONYMS.get(t, t)
 
@@ -217,9 +204,7 @@ def text_tokens(value: str) -> set[str]:
 def read_reference() -> pd.DataFrame:
     src = DATA_DIR / DEFAULT_COMMISSIONS_FILENAME
     if not src.exists():
-        raise FileNotFoundError(
-            f"Не найден файл data/{DEFAULT_COMMISSIONS_FILENAME}. Положите его в repo в папку data."
-        )
+        raise FileNotFoundError(f"Не найден файл data/{DEFAULT_COMMISSIONS_FILENAME}. Положите его в repo в папку data.")
 
     df = pd.read_excel(src)
     df.columns = [str(c).strip() for c in df.columns]
@@ -252,16 +237,12 @@ def read_reference() -> pd.DataFrame:
 
     for col in ["Ставка комиссии FBSM, %", "Ставка комиссии FBS, %"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
-
     return df
 
 
 def prepare_products(df: pd.DataFrame) -> pd.DataFrame:
-    renamed = {}
-    for c in df.columns:
-        renamed[c] = COLUMN_ALIASES.get(normalize_text(c), str(c).strip())
+    renamed = {c: COLUMN_ALIASES.get(normalize_text(c), str(c).strip()) for c in df.columns}
     df = df.rename(columns=renamed).copy()
-
     missing = [c for c in PRODUCT_REQUIRED_COLS if c not in df.columns]
     if missing:
         raise ValueError(f"В файле товаров не хватает колонок: {', '.join(missing)}")
@@ -290,9 +271,9 @@ def build_product_template_bytes() -> bytes:
     headers = PRODUCT_REQUIRED_COLS + PRODUCT_OPTIONAL_COLS
     ws.append(headers)
     sample_rows = [
-        ["SM-001", "Кроссовки беговые мужские", 2500, 5990, 0.8, 32, 22, 12, "", "", "ОСНО (22%)", "", "", 20, "", "", "", ""],
-        ["SM-002", "Велосипед горный", 18000, 32990, 14.5, 145, 25, 78, "", "", "УСН доходы (6%)", "", 300, 18, "", "", "", ""],
-        ["SM-003", "Велосипедный замок", 500, 1000, 0.3, 15, 10, 5, "", "", "", "", "", 20, "", "", "", ""],
+        ["SM-001", "Кроссовки беговые мужские", 2500, 5990, 0.8, 32, 22, 12, "", 5, "ОСНО (22%)", "", 0, 20, 0, 0, "", ""],
+        ["SM-002", "Велосипед горный", 18000, 32990, 14.5, 145, 25, 78, "", 7, "УСН доходы (6%)", "", 300, 18, 0, 0, "", ""],
+        ["SM-003", "Велосипедный замок", 500, 1000, 0.3, 15, 10, 5, "", 0, "ОСНО (22%)", "", 0, 20, 0, 0, "", ""],
     ]
     for row in sample_rows:
         ws.append(row)
@@ -309,16 +290,11 @@ def build_product_template_bytes() -> bytes:
     guide = wb.create_sheet("Описание полей")
     guide.append(["Колонка", "Описание"])
     explanations = [
-        ("Артикул", "Обязательное поле."),
         ("Наименование товара", "Обязательное поле. Категория и тарифная группа определяются автоматически по названию."),
-        ("Себестоимость, ₽", "Обязательное поле."),
-        ("Цена продажи, ₽", "Обязательное поле."),
-        ("Вес факт, кг", "Обязательное поле."),
-        ("Длина, см / Ширина, см / Высота, см", "Обязательные поля для логистики."),
-        ("Тарифная группа / Товарная группа 3 уровня", "Необязательно. Обычно не нужны, только если хотите вручную переопределить автоподбор."),
-        ("Дней хранения FBSM / Реклама, % / Прочие расходы, ₽ / Целевая маржа, %", "Можно оставлять пустыми: приложение возьмет значения из левой панели."),
-        ("Система налогообложения / Налог, %", "Можно оставить пустым и задать общий режим слева."),
-        ("Доля возвратов, % / Доля невыкупа/отмен, %", "Нужны только для FBSM и ожидаемой обратной логистики."),
+        ("Вес и габариты", "Обязательные поля: именно от них считается логистика. Цена на логистику не влияет."),
+        ("Система налогообложения / Налог, %", "Можно оставить пустыми: приложение возьмет общий режим из левой панели."),
+        ("Целевая маржа, %", "Если пусто или 0, берется значение по умолчанию из левой панели."),
+        ("Тарифная группа / Товарная группа 3 уровня", "Обычно заполнять не нужно. Это ручное переопределение, если автоподбор не устроил."),
     ]
     for row in explanations:
         guide.append(row)
@@ -326,7 +302,7 @@ def build_product_template_bytes() -> bytes:
         cell.fill = header_fill
         cell.font = Font(color="FFFFFF", bold=True)
     guide.column_dimensions["A"].width = 42
-    guide.column_dimensions["B"].width = 118
+    guide.column_dimensions["B"].width = 110
 
     stream = io.BytesIO()
     wb.save(stream)
@@ -386,11 +362,11 @@ def score_reference_match(name: str, row: pd.Series) -> float:
         ref_norm = row[f"__norm_{col}"]
         ref_tokens = row[f"__tokens_{col}"]
         seq = SequenceMatcher(None, name_norm, ref_norm).ratio()
-        token_inter = name_tokens & ref_tokens
-        overlap = len(token_inter) / max(len(ref_tokens), 1)
-        cover_name = len(token_inter) / max(len(name_tokens), 1)
+        inter = name_tokens & ref_tokens
+        overlap = len(inter) / max(len(ref_tokens), 1)
+        cover_name = len(inter) / max(len(name_tokens), 1)
         contains = 1.0 if ref_norm and (ref_norm in name_norm or any(tok in ref_norm for tok in name_tokens if len(tok) >= 5)) else 0.0
-        score = max(seq * 0.45 + overlap * 0.35 + cover_name * 0.20, overlap * 0.75 + cover_name * 0.25, contains)
+        score = max(seq * 0.35 + overlap * 0.40 + cover_name * 0.25, overlap * 0.75 + cover_name * 0.25, contains)
         best = max(best, score)
 
     combo_tokens = row["__tokens_combo"]
@@ -399,27 +375,23 @@ def score_reference_match(name: str, row: pd.Series) -> float:
     combo_overlap = len(inter) / max(len(name_tokens), 1)
     combo_cover = len(inter) / max(len(combo_tokens), 1)
     prefix_hits = sum(1 for tok in name_tokens for ref_tok in combo_tokens if tok == ref_tok or tok.startswith(ref_tok) or ref_tok.startswith(tok))
-    prefix_boost = min(prefix_hits * 0.06, 0.24)
+    prefix_boost = min(prefix_hits * 0.05, 0.20)
     phrase_boost = 0.0
 
     if "велосипед" in name_tokens and "велоспорт" in combo_norm:
-        phrase_boost += 0.18
-    if "замок" in name_tokens and "замки для велосипеда" in combo_norm:
-        phrase_boost += 0.30
-    if "горн" in name_tokens and "велосипеды" in combo_norm:
-        phrase_boost += 0.18
-    if "кроссовк" in name_tokens and "кроссовки для бега" in combo_norm and "бег" in name_tokens:
-        phrase_boost += 0.25
-
-    best = max(best, combo_overlap * 0.70 + combo_cover * 0.12 + prefix_boost + phrase_boost)
-
-    if inter and len(inter) >= 2:
-        best = max(best, 0.78 + min(len(inter) * 0.02, 0.10))
+        phrase_boost += 0.15
     if {"велосипед", "замок"}.issubset(name_tokens) and "замки для велосипеда" in combo_norm:
-        best = max(best, 0.98)
+        phrase_boost += 0.40
     if {"велосипед", "горн"}.issubset(name_tokens) and "велосипеды" in combo_norm:
-        best = max(best, 0.98)
+        phrase_boost += 0.30
+    if {"кроссовк", "бег"}.issubset(name_tokens) and "кроссовки для бега" in combo_norm:
+        phrase_boost += 0.30
+    if "аксессуары для велоспорта" in combo_norm and ("велосипед" in name_tokens or "вело" in name_norm):
+        phrase_boost += 0.12
 
+    best = max(best, combo_overlap * 0.72 + combo_cover * 0.10 + prefix_boost + phrase_boost)
+    if inter and len(inter) >= 2:
+        best = max(best, 0.80 + min(len(inter) * 0.02, 0.10))
     return min(best, 0.99)
 
 
@@ -472,10 +444,6 @@ def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_t
             row = rows.iloc[0]
             return str(row["Тарифная группа"]), str(row["Товарная группа 3 уровня"]), 1.0, note
 
-    name_tokens = text_tokens(product_name)
-    if not name_tokens:
-        return "", "", None, "Не найдено"
-
     candidates = []
     for _, ref_row in reference_df.iterrows():
         score = score_reference_match(product_name, ref_row)
@@ -484,7 +452,6 @@ def resolve_tariff_group(reference_df: pd.DataFrame, product_name: str, manual_t
 
     if not candidates:
         return "", "", None, "Не найдено"
-
     candidates.sort(key=lambda x: x[0], reverse=True)
     best_score, best_tariff, best_lvl3 = candidates[0]
     if best_score >= 0.42:
@@ -541,48 +508,65 @@ def calc_fbsm_storage(weight_kg: float, storage_days: float) -> float:
     return w * 3 * days_61_90 + w * 6 * days_91_plus
 
 
-def is_profit_based_tax_system(tax_system_label: str) -> bool:
-    label = str(tax_system_label or "").lower()
-    return "осно" in label or "доходы-расходы" in label
+def tax_mode(label: str) -> str:
+    label = str(label or "").lower()
+    if "осно" in label:
+        return "payout"
+    if "доходы-расходы" in label:
+        return "profit"
+    if "доходы" in label:
+        return "payout"
+    return "revenue"
 
 
 def calc_tax_amount(
     price: float,
     tax_pct: float,
     tax_system_label: str,
-    cost: float,
-    commission_rub: float,
-    mp_services_rub: float,
-    ad_cost_rub: float,
-    other_costs: float,
-) -> float:
+    payout_from_mp: float,
+    profit_before_tax: float,
+) -> Tuple[float, float]:
     rate = tax_pct / 100.0
     if rate <= 0 or price <= 0:
-        return 0.0
+        return 0.0, 0.0
 
-    if is_profit_based_tax_system(tax_system_label):
-        profit_before_tax = price - cost - commission_rub - mp_services_rub - ad_cost_rub - other_costs
-        return max(profit_before_tax, 0.0) * rate
-
-    return price * rate
+    mode = tax_mode(tax_system_label)
+    if mode == "profit":
+        base = max(profit_before_tax, 0.0)
+    elif mode == "payout":
+        base = max(payout_from_mp, 0.0)
+    else:
+        base = max(price, 0.0)
+    return base, base * rate
 
 
 def solve_target_price(
     target_margin_pct: float,
     cost_fixed_rub: float,
-    variable_rate_pct: float,
+    commission_pct: float,
+    ads_pct: float,
     tax_pct: float,
     tax_system_label: str,
 ) -> Optional[float]:
     t = target_margin_pct / 100.0
-    v = variable_rate_pct / 100.0
+    c = commission_pct / 100.0
+    a = ads_pct / 100.0
     r = tax_pct / 100.0
+    mode = tax_mode(tax_system_label)
 
-    if is_profit_based_tax_system(tax_system_label):
-        denominator = (1 - r) * (1 - v) - t
-        return None if denominator <= 0 else cost_fixed_rub * (1 - r) / denominator
+    if mode == "profit":
+        # profit = (P*(1-c-a) - fixed)*(1-r)
+        denominator = (1 - r) * (1 - c - a) - t
+        return None if denominator <= 0 else (1 - r) * cost_fixed_rub / denominator
 
-    denominator = 1 - v - r - t
+    if mode == "payout":
+        # tax = r * (P*(1-c) - logistics/storage/handling)
+        # profit = P - commission - ads - tax - fixed
+        denominator = 1 - c - a - r * (1 - c) - t
+        constant = cost_fixed_rub - r * cost_fixed_rub
+        return None if denominator <= 0 else constant / denominator
+
+    denominator = 1 - c - a - r - t
     return None if denominator <= 0 else cost_fixed_rub / denominator
 
 
@@ -625,9 +609,8 @@ def calculate_row(
 
     commission_rub = price * commission_pct / 100.0
     ad_cost_rub = price * ads_pct / 100.0
-    tax_rub = 0.0
-
     logistics_to_buyer = reverse_logistics = storage_rub = defect_handling = excess_handling = billable_weight = 0.0
+
     if scheme == "FBS":
         billable_weight = calc_fbs_billable_weight(actual_weight, length, width, height, fbs_weight_basis)
         logistics_to_buyer = calc_fbs_delivery(billable_weight, fbs_logistics_profile)
@@ -641,49 +624,47 @@ def calculate_row(
         excess_handling = 30.0 if include_fbsm_excess_handling else 0.0
 
     mp_services_rub = logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling
-    tax_rub = calc_tax_amount(
+    payout_from_mp = price - commission_rub - mp_services_rub
+    profit_before_tax = payout_from_mp - cost - ad_cost_rub - other_costs
+    tax_base_rub, tax_rub = calc_tax_amount(
         price=price,
         tax_pct=tax_pct,
         tax_system_label=tax_system_label,
-        cost=cost,
-        commission_rub=commission_rub,
-        mp_services_rub=mp_services_rub,
-        ad_cost_rub=ad_cost_rub,
-        other_costs=other_costs,
+        payout_from_mp=payout_from_mp,
+        profit_before_tax=profit_before_tax,
     )
-    payout_before_seller_costs = price - commission_rub - mp_services_rub
+
     full_cost = cost + commission_rub + mp_services_rub + ad_cost_rub + tax_rub + other_costs
     profit = price - full_cost
-    margin_on_revenue = (profit / price) if price else 0.0
-    markup_on_full_cost = (price / full_cost - 1) if full_cost else 0.0
+    margin_on_revenue_pct = (profit / price * 100.0) if price else 0.0
+    markup_on_full_cost_pct = (price / full_cost - 1.0) * 100.0 if full_cost else 0.0
 
-    target_price = target_margin_profit_rub = target_margin_pct_fact = None
+    target_price = target_profit_rub = target_margin_pct_fact = None
     fixed_costs = cost + logistics_to_buyer + reverse_logistics + storage_rub + defect_handling + excess_handling + other_costs
-    variable_rate = commission_pct + ads_pct
     if target_margin > 0:
         target_price = solve_target_price(
             target_margin_pct=target_margin,
             cost_fixed_rub=fixed_costs,
-            variable_rate_pct=variable_rate,
+            commission_pct=commission_pct,
+            ads_pct=ads_pct,
             tax_pct=tax_pct,
             tax_system_label=tax_system_label,
         )
-        if target_price:
+        if target_price is not None:
             target_commission = target_price * commission_pct / 100.0
             target_ads = target_price * ads_pct / 100.0
-            target_tax = calc_tax_amount(
+            target_payout = target_price - target_commission - mp_services_rub
+            target_profit_before_tax = target_payout - cost - target_ads - other_costs
+            _, target_tax = calc_tax_amount(
                 price=target_price,
                 tax_pct=tax_pct,
                 tax_system_label=tax_system_label,
-                cost=cost,
-                commission_rub=target_commission,
-                mp_services_rub=mp_services_rub,
-                ad_cost_rub=target_ads,
-                other_costs=other_costs,
+                payout_from_mp=target_payout,
+                profit_before_tax=target_profit_before_tax,
             )
             target_full_cost = cost + mp_services_rub + other_costs + target_commission + target_ads + target_tax
-            target_margin_profit_rub = target_price - target_full_cost
-            target_margin_pct_fact = (target_margin_profit_rub / target_price) if target_price else None
+            target_profit_rub = target_price - target_full_cost
+            target_margin_pct_fact = (target_profit_rub / target_price * 100.0) if target_price else None
 
     warnings = []
     if not tariff_group:
@@ -691,9 +672,13 @@ def calculate_row(
     if commission_pct == 0:
         warnings.append("Комиссия не найдена")
     if target_margin <= 0:
-        warnings.append("Целевая маржа 0% — рекомендованная цена не рассчитывается")
+        warnings.append("Целевая маржа не задана — рекомендованная цена не рассчитана")
     elif target_price is None:
-        warnings.append("Рекомендованная цена не считается: комиссия + реклама + налог + целевая маржа >= 100%")
+        warnings.append("Рекомендованная цена не считается: слишком высокая сумма комиссии, рекламы, налога и целевой маржи")
+    if price <= 0:
+        warnings.append("Цена продажи 0")
+    if actual_weight <= 0:
+        warnings.append("Вес товара 0")
 
     return {
         "Артикул": sku,
@@ -702,31 +687,32 @@ def calculate_row(
         "Тарифная группа": tariff_group,
         "Товарная группа 3 уровня": lvl3_group,
         "Как определили категорию": match_note,
-        "Совпадение, score": round(match_score or 0.0, 2) if match_score is not None else 0.0,
         "Налоговый режим": tax_system_label,
         "Цена продажи, ₽": round(price, 2),
-        "Рекомендованная цена, ₽": round(target_price, 2) if target_price else None,
+        "Рекомендованная цена, ₽": round(target_price, 2) if target_price is not None else None,
         "Себестоимость, ₽": round(cost, 2),
-        "Комиссия, %": round(commission_pct / 100.0, 4),
+        "Комиссия, %": round(commission_pct, 2),
         "Комиссия, ₽": round(commission_rub, 2),
-        "Налог, %": round(tax_pct / 100.0, 4),
-        "Налог, ₽": round(tax_rub, 2),
-        "Вес для тарифа": round(billable_weight, 2),
+        "Вес для тарифа, кг": round(billable_weight, 2),
         "Логистика до покупателя, ₽": round(logistics_to_buyer, 2),
         "Обратная логистика (ожидаемая), ₽": round(reverse_logistics, 2),
         "Хранение FBSM, ₽": round(storage_rub, 2),
         "Обработка брака, ₽": round(defect_handling, 2),
         "Обработка излишков, ₽": round(excess_handling, 2),
+        "Реклама, %": round(ads_pct, 2),
         "Реклама, ₽": round(ad_cost_rub, 2),
+        "Ставка налога, %": round(tax_pct, 2),
+        "Налоговая база, ₽": round(tax_base_rub, 2),
+        "Налог, ₽": round(tax_rub, 2),
         "Прочие расходы, ₽": round(other_costs, 2),
-        "Выплата до себестоимости, ₽": round(payout_before_seller_costs, 2),
+        "Выплата от МП, ₽": round(payout_from_mp, 2),
         "Полная себестоимость, ₽": round(full_cost, 2),
         "Прибыль, ₽": round(profit, 2),
-        "Маржа к выручке, %": round(margin_on_revenue, 4),
-        "Наценка на полную себестоимость, %": round(markup_on_full_cost, 4),
-        "Целевая маржа, %": round(target_margin / 100.0, 4),
-        "Прибыль при рекомендованной цене, ₽": round(target_margin_profit_rub, 2) if target_margin_profit_rub is not None else None,
-        "Маржа при рекомендованной цене, %": round(target_margin_pct_fact, 4) if target_margin_pct_fact is not None else None,
+        "Маржа к выручке, %": round(margin_on_revenue_pct, 2),
+        "Наценка на полную себестоимость, %": round(markup_on_full_cost_pct, 2),
+        "Целевая маржа, %": round(target_margin, 2),
+        "Прибыль при рекомендованной цене, ₽": round(target_profit_rub, 2) if target_profit_rub is not None else None,
+        "Маржа при рекомендованной цене, %": round(target_margin_pct_fact, 2) if target_margin_pct_fact is not None else None,
         "Комментарий": "; ".join(warnings),
     }
 
@@ -735,7 +721,6 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = "Результаты"
-
     ws.append(list(result_df.columns))
     for row in result_df.itertuples(index=False):
         ws.append(list(row))
@@ -750,8 +735,8 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
 
     money_cols = {c for c in result_df.columns if "₽" in c}
     pct_cols = {
-        "Комиссия, %", "Налог, %", "Маржа к выручке, %", "Наценка на полную себестоимость, %",
-        "Целевая маржа, %", "Маржа при рекомендованной цене, %",
+        "Комиссия, %", "Реклама, %", "Ставка налога, %", "Маржа к выручке, %",
+        "Наценка на полную себестоимость, %", "Целевая маржа, %", "Маржа при рекомендованной цене, %",
     }
 
     for row in ws.iter_rows(min_row=2):
@@ -760,7 +745,7 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
             if col_name in money_cols and isinstance(cell.value, (int, float)):
                 cell.number_format = '#,##0.00_);[Red](#,##0.00)'
             elif col_name in pct_cols and isinstance(cell.value, (int, float)):
-                cell.number_format = '0.0%'
+                cell.number_format = '0.00'
             cell.alignment = Alignment(vertical="center", wrap_text=True)
 
     total_row = ws.max_row + 2
@@ -775,13 +760,13 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
             cell.number_format = '#,##0.00_);[Red](#,##0.00)'
         elif col_name in pct_cols:
             cell.value = f"=AVERAGE({col_letter}2:{col_letter}{total_row - 2})"
-            cell.number_format = '0.0%'
+            cell.number_format = '0.00'
 
     for col_idx, col_name in enumerate(result_df.columns, start=1):
         max_len = len(str(col_name))
         for row_idx in range(2, ws.max_row + 1):
             max_len = max(max_len, len(str(ws.cell(row_idx, col_idx).value or "")))
-        ws.column_dimensions[get_column_letter(col_idx)].width = min(max(max_len + 2, 12), 38)
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max(max_len + 2, 12), 40)
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
@@ -789,19 +774,18 @@ def build_export_workbook(result_df: pd.DataFrame) -> bytes:
     guide = wb.create_sheet("Пояснения")
     guide.append(["Показатель", "Описание"])
     for row in [
-        ("Как определили категорию", "Показывает, было ли точное совпадение, правило по ключевым словам или автоподбор по названию."),
-        ("Рекомендованная цена, ₽", "Считается от целевой маржи с учетом комиссии, логистики, рекламы, налога и прочих расходов."),
-        ("Выплата до себестоимости, ₽", "Цена продажи минус комиссия и услуги маркетплейса."),
+        ("Выплата от МП, ₽", "Что остается после комиссии и услуг маркетплейса, но до себестоимости, рекламы, налога и прочих расходов."),
+        ("Налоговая база, ₽", "База, с которой рассчитан налог по выбранному режиму."),
         ("Полная себестоимость, ₽", "Себестоимость товара плюс комиссия, логистика, хранение, реклама, налог и прочие расходы."),
-        ("Маржа к выручке, %", "Прибыль / цена продажи."),
-        ("Наценка на полную себестоимость, %", "Цена продажи / полная себестоимость - 1."),
+        ("Маржа к выручке, %", "Прибыль / цена продажи * 100."),
+        ("Наценка на полную себестоимость, %", "(Цена продажи / полная себестоимость - 1) * 100."),
     ]:
         guide.append(row)
     for cell in guide[1]:
         cell.fill = header_fill
         cell.font = Font(color="FFFFFF", bold=True)
     guide.column_dimensions["A"].width = 40
-    guide.column_dimensions["B"].width = 110
+    guide.column_dimensions["B"].width = 115
 
     stream = io.BytesIO()
     wb.save(stream)
@@ -813,7 +797,7 @@ def render_overview_metrics(result_df: pd.DataFrame) -> None:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("SKU", f"{len(result_df)}")
     c2.metric("Суммарная прибыль", f"{result_df['Прибыль, ₽'].sum():,.2f} ₽")
-    c3.metric("Средняя маржа", f"{result_df['Маржа к выручке, %'].mean():.1%}")
+    c3.metric("Средняя маржа", f"{result_df['Маржа к выручке, %'].mean():.1f}%")
     c4.metric(
         "Средняя рекомендованная цена",
         f"{result_df['Рекомендованная цена, ₽'].dropna().mean():,.2f} ₽" if result_df['Рекомендованная цена, ₽'].notna().any() else "—",
@@ -885,9 +869,10 @@ def app() -> None:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     products_file = st.file_uploader("Загрузите Excel-файл с товарами", type=["xlsx"])
+    st.caption("Логистика пересчитывается от веса и габаритов. Изменение цены влияет на комиссию, рекламу, налог, прибыль и рекомендованную цену, но не на сам тариф логистики.")
 
     if products_file is None:
-        st.info("Сначала скачайте шаблон, заполните товары и загрузите файл. Если в строке не указана целевая маржа, реклама, хранение или прочие расходы, приложение возьмет значения из левой панели.")
+        st.info("Сначала скачайте шаблон, заполните товары и загрузите файл.")
         return
 
     try:
@@ -916,9 +901,9 @@ def app() -> None:
     result_df = pd.DataFrame(result_rows)
     display_df = result_df[[c for c in VISIBLE_COLUMNS if c in result_df.columns]].copy()
     render_overview_metrics(display_df)
-    st.dataframe(display_df, use_container_width=True, hide_index=True, height=680)
+    st.dataframe(display_df, use_container_width=True, hide_index=True, height=700)
 
-    export_bytes = build_export_workbook(result_df)
+    export_bytes = build_export_workbook(display_df)
     st.download_button(
         "Скачать результат в Excel",
         data=export_bytes,
